@@ -130,6 +130,11 @@ void HeliosPipeline::createShaderModule(const std::vector<char> &code,
   }
 }
 
+void HeliosPipeline::bind(VkCommandBuffer commandBuffer) {
+  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    graphicsPipeline);
+}
+
 PipelineConfigInfo HeliosPipeline::defaultPipelineConfigInfo(uint32_t width,
                                                              uint32_t height) {
 
