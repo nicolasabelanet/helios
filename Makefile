@@ -16,7 +16,7 @@ $(TARGET): *.cpp *.hpp
 
 # make shader targets
 %.spv: %
-	${GLSLC} $< -o $@
+	glslc $< -o $@
 
 .PHONY: test clean
 

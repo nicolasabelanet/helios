@@ -1,4 +1,5 @@
 #include "first_app.hpp"
+#include "helios_model.hpp"
 #include "helios_pipeline.hpp"
 #include "vulkan/vulkan_core.h"
 
@@ -10,6 +11,7 @@
 namespace helios {
 
 FirstApp::FirstApp() {
+  loadModels();
   createPipelineLayout();
   createPipeline();
   createCommandBuffers();
@@ -27,6 +29,13 @@ void FirstApp::run() {
 
   vkDeviceWaitIdle(heliosDevice.device());
 };
+
+void FirstApp::loadModels() {
+  std::vector<HeliosModel::Vertex> vertices{
+      {{0.0f, -0.5f}}, {{0.5f, 0.5f}}, {{-0.5f, 0.5f}}};
+
+  heliosModel = std::make_unique<HeliosModel>(heliosDevice, vertices);
+}
 
 void FirstApp::createPipelineLayout() {
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -92,7 +101,8 @@ void FirstApp::createCommandBuffers() {
                          VK_SUBPASS_CONTENTS_INLINE);
 
     heliosPipeline->bind(commandBuffers[i]);
-    vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+    heliosModel->bind(commandBuffers[i]);
+    heliosModel->draw(commandBuffers[i]);
 
     vkCmdEndRenderPass(commandBuffers[i]);
 
