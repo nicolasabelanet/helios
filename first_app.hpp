@@ -1,6 +1,6 @@
 #pragma once
 #include "helios_device.hpp"
-#include "helios_model.hpp"
+#include "helios_game_object.hpp"
 #include "helios_pipeline.hpp"
 #include "helios_swap_chain.hpp"
 #include "helios_window.hpp"
@@ -26,7 +26,7 @@ public:
   void run();
 
 private:
-  void loadModels();
+  void loadGameObjects();
   void createPipelineLayout();
   void createPipeline();
   void createCommandBuffers();
@@ -34,6 +34,7 @@ private:
   void drawFrame();
   void recreateSwapChain();
   void recordCommandBuffer(int imageIndex);
+  void renderGameObjects(VkCommandBuffer commandBuffer);
 
   HeliosWindow heliosWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
   HeliosDevice heliosDevice{heliosWindow};
@@ -41,7 +42,7 @@ private:
   std::unique_ptr<HeliosPipeline> heliosPipeline;
   VkPipelineLayout pipelineLayout;
   std::vector<VkCommandBuffer> commandBuffers;
-  std::unique_ptr<HeliosModel> heliosModel;
+  std::vector<HeliosGameObject> gameObjects;
 };
 
 } // namespace helios
