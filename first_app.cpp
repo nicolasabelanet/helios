@@ -32,7 +32,9 @@ void FirstApp::run() {
 
 void FirstApp::loadModels() {
   std::vector<HeliosModel::Vertex> vertices{
-      {{0.0f, -0.5f}}, {{0.5f, 0.5f}}, {{-0.5f, 0.5f}}};
+      {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+      {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
   heliosModel = std::make_unique<HeliosModel>(heliosDevice, vertices);
 }
