@@ -7,7 +7,20 @@
 
 namespace helios {
 
-struct PipelineConfigInfo {};
+struct PipelineConfigInfo {
+  VkViewport viewport;
+  VkRect2D scissor;
+  VkPipelineViewportStateCreateInfo viewportInfo;
+  VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+  VkPipelineRasterizationStateCreateInfo rasterizationInfo;
+  VkPipelineMultisampleStateCreateInfo multisampleInfo;
+  VkPipelineColorBlendAttachmentState colorBlendAttachment;
+  VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+  VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+  VkPipelineLayout pipelineLayout = nullptr;
+  VkRenderPass renderPass = nullptr;
+  uint32_t subpass = 0;
+};
 
 class HeliosPipeline {
 
@@ -16,7 +29,7 @@ public:
                  const std::string &fragFilepath,
                  const PipelineConfigInfo &configInfo);
 
-  ~HeliosPipeline(){};
+  ~HeliosPipeline();
 
   HeliosPipeline(const HeliosPipeline &) = delete;
   void operator=(const HeliosPipeline &) = delete;
