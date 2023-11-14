@@ -43,6 +43,7 @@ void FirstApp::loadModels() {
 }
 
 void FirstApp::createPipelineLayout() {
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.pSetLayouts = 0;
@@ -57,8 +58,14 @@ void FirstApp::createPipelineLayout() {
 }
 
 void FirstApp::createPipeline() {
-  auto pipelineConfig = HeliosPipeline::defaultPipelineConfigInfo(
-      heliosSwapChain->width(), heliosSwapChain->height());
+
+  assert(heliosSwapChain != nullptr &&
+         "cannot create pipeline before swap chain");
+  assert(pipelineLayout != nullptr &&
+         "cannot create pipeline before pipeline layout");
+
+  PipelineConfigInfo pipelineConfig{};
+  HeliosPipeline::defaultPipelineConfigInfo(pipelineConfig);
   pipelineConfig.renderPass = heliosSwapChain->getRenderPass();
   pipelineConfig.pipelineLayout = pipelineLayout;
   heliosPipeline = std::make_unique<HeliosPipeline>(
@@ -75,10 +82,16 @@ void FirstApp::recreateSwapChain() {
 
   vkDeviceWaitIdle(heliosDevice.device());
 
-  if (heliosSwapChain != nullptr) {
-    heliosSwapChain->destroySwapChain();
+  if (heliosSwapChain == nullptr) {
+    heliosSwapChain = std::make_unique<HeliosSwapChain>(heliosDevice, extent);
+  } else {
+    heliosSwapChain = std::make_unique<HeliosSwapChain>(
+        heliosDevice, extent, std::move(heliosSwapChain));
+    if (heliosSwapChain->imageCount() != commandBuffers.size()) {
+      freeCommandBuffers();
+      createCommandBuffers();
+    }
   }
-  heliosSwapChain = std::make_unique<HeliosSwapChain>(heliosDevice, extent);
   createPipeline();
 }
 
@@ -96,6 +109,13 @@ void FirstApp::createCommandBuffers() {
                                commandBuffers.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers");
   }
+}
+
+void FirstApp::freeCommandBuffers() {
+  vkFreeCommandBuffers(heliosDevice.device(), heliosDevice.getCommandPool(),
+                       static_cast<uint32_t>(commandBuffers.size()),
+                       commandBuffers.data());
+  commandBuffers.clear();
 }
 
 void FirstApp::recordCommandBuffer(int imageIndex) {
@@ -123,6 +143,19 @@ void FirstApp::recordCommandBuffer(int imageIndex) {
   renderPassInfo.pClearValues = clearValues.data();
   vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo,
                        VK_SUBPASS_CONTENTS_INLINE);
+
+  VkViewport viewport{};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width =
+      static_cast<float>(heliosSwapChain->getSwapChainExtent().width);
+  viewport.height =
+      static_cast<float>(heliosSwapChain->getSwapChainExtent().height);
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  VkRect2D scissor{{0, 0}, heliosSwapChain->getSwapChainExtent()};
+  vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+  vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
   heliosPipeline->bind(commandBuffers[imageIndex]);
   heliosModel->bind(commandBuffers[imageIndex]);
