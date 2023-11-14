@@ -1,21 +1,41 @@
 #pragma once
 #include "helios_device.hpp"
 #include "helios_pipeline.hpp"
+#include "helios_swap_chain.hpp"
 #include "helios_window.hpp"
+#include "vulkan/vulkan_core.h"
+
+// std
+#include <memory>
+#include <vector>
 
 namespace helios {
+
 class FirstApp {
 public:
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
+
+  FirstApp();
+  ~FirstApp();
+
+  FirstApp(const FirstApp &) = delete;
+  FirstApp &operator=(const FirstApp &) = delete;
+
   void run();
 
 private:
+  void createPipelineLayout();
+  void createPipeline();
+  void createCommandBuffers();
+  void drawFrame();
+
   HeliosWindow heliosWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
   HeliosDevice heliosDevice{heliosWindow};
-  HeliosPipeline heliosPipeline{
-      heliosDevice, "shaders/simple_shader.vert.spv",
-      "shaders/simple_shader.frag.spv",
-      HeliosPipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
+  HeliosSwapChain heliosSwapChain{heliosDevice, heliosWindow.getExtent()};
+  std::unique_ptr<HeliosPipeline> heliosPipeline;
+  VkPipelineLayout pipelineLayout;
+  std::vector<VkCommandBuffer> commandBuffers;
 };
+
 } // namespace helios
