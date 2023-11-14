@@ -31,7 +31,7 @@ public:
   ~HeliosPipeline();
 
   HeliosPipeline(const HeliosPipeline &) = delete;
-  void operator=(const HeliosPipeline &) = delete;
+  HeliosPipeline &operator=(const HeliosPipeline &) = delete;
 
   void bind(VkCommandBuffer commandBuffer);
   static PipelineConfigInfo defaultPipelineConfigInfo(uint32_t width,

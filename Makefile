@@ -18,11 +18,6 @@ $(TARGET): *.cpp *.hpp
 %.spv: %
 	glslc $< -o $@
 
-.PHONY: test clean
-
-test: a.out
-	./a.out
-
 clean:
 	rm -f a.out
 	rm -f *.spv

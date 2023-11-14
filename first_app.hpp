@@ -31,10 +31,12 @@ private:
   void createPipeline();
   void createCommandBuffers();
   void drawFrame();
+  void recreateSwapChain();
+  void recordCommandBuffer(int imageIndex);
 
   HeliosWindow heliosWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
   HeliosDevice heliosDevice{heliosWindow};
-  HeliosSwapChain heliosSwapChain{heliosDevice, heliosWindow.getExtent()};
+  std::unique_ptr<HeliosSwapChain> heliosSwapChain;
   std::unique_ptr<HeliosPipeline> heliosPipeline;
   VkPipelineLayout pipelineLayout;
   std::vector<VkCommandBuffer> commandBuffers;

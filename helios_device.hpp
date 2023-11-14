@@ -37,9 +37,7 @@ public:
 
   // Not copyable or movable
   HeliosDevice(const HeliosDevice &) = delete;
-  void operator=(const HeliosDevice &) = delete;
-  HeliosDevice(HeliosDevice &&) = delete;
-  HeliosDevice &operator=(HeliosDevice &&) = delete;
+  HeliosDevice &operator=(const HeliosDevice &) = delete;
 
   VkCommandPool getCommandPool() { return commandPool; }
   VkDevice device() { return device_; }

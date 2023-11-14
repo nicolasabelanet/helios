@@ -1,4 +1,5 @@
 #include "helios_swap_chain.hpp"
+#include "vulkan/vulkan_core.h"
 
 // std
 #include <array>
@@ -49,6 +50,13 @@ HeliosSwapChain::~HeliosSwapChain() {
     vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
     vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
     vkDestroyFence(device.device(), inFlightFences[i], nullptr);
+  }
+}
+
+void HeliosSwapChain::destroySwapChain() {
+  if (swapChain != nullptr) {
+    vkDestroySwapchainKHR(device.device(), swapChain, nullptr);
+    swapChain = nullptr;
   }
 }
 
@@ -160,7 +168,6 @@ void HeliosSwapChain::createSwapChain() {
 
   createInfo.presentMode = presentMode;
   createInfo.clipped = VK_TRUE;
-
   createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapChain) !=
@@ -365,7 +372,7 @@ void HeliosSwapChain::createSyncObjects() {
 VkSurfaceFormatKHR HeliosSwapChain::chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR> &availableFormats) {
   for (const auto &availableFormat : availableFormats) {
-    if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
+    if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
         availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
       return availableFormat;
     }

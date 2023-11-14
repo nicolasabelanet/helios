@@ -5,7 +5,7 @@
 namespace helios {
 
 HeliosWindow::HeliosWindow(int w, int h, std::string name)
-    : width{w}, height{h}, window_name{name} {
+    : width{w}, height{h}, windowName{name} {
   initWindow();
 }
 
@@ -17,10 +17,12 @@ HeliosWindow::~HeliosWindow() {
 void HeliosWindow::initWindow() {
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
   window =
-      glfwCreateWindow(width, height, window_name.c_str(), nullptr, nullptr);
+      glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
+  glfwSetWindowUserPointer(window, this);
+  glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
 void HeliosWindow::createWindowSurface(VkInstance instance,
@@ -29,6 +31,15 @@ void HeliosWindow::createWindowSurface(VkInstance instance,
       VK_SUCCESS) {
     throw std::runtime_error("failed to create window surface");
   }
+}
+
+void HeliosWindow::framebufferResizeCallback(GLFWwindow *window, int width,
+                                             int height) {
+  auto heliosWindow =
+      reinterpret_cast<HeliosWindow *>(glfwGetWindowUserPointer(window));
+  heliosWindow->frameBufferResized = true;
+  heliosWindow->width = width;
+  heliosWindow->height = height;
 }
 
 } // namespace helios

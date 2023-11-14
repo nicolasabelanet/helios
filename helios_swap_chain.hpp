@@ -19,8 +19,9 @@ public:
   ~HeliosSwapChain();
 
   HeliosSwapChain(const HeliosSwapChain &) = delete;
-  void operator=(const HeliosSwapChain &) = delete;
+  HeliosSwapChain &operator=(const HeliosSwapChain &) = delete;
 
+  void destroySwapChain();
   VkFramebuffer getFrameBuffer(int index) {
     return swapChainFramebuffers[index];
   }

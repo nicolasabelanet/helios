@@ -1,10 +1,13 @@
 #include "first_app.hpp"
+#include "helios_device.hpp"
 #include "helios_model.hpp"
 #include "helios_pipeline.hpp"
+#include "helios_swap_chain.hpp"
 #include "vulkan/vulkan_core.h"
 
 // std
 #include <array>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 
@@ -13,7 +16,7 @@ namespace helios {
 FirstApp::FirstApp() {
   loadModels();
   createPipelineLayout();
-  createPipeline();
+  recreateSwapChain();
   createCommandBuffers();
 }
 
@@ -55,16 +58,32 @@ void FirstApp::createPipelineLayout() {
 
 void FirstApp::createPipeline() {
   auto pipelineConfig = HeliosPipeline::defaultPipelineConfigInfo(
-      heliosSwapChain.width(), heliosSwapChain.height());
-  pipelineConfig.renderPass = heliosSwapChain.getRenderPass();
+      heliosSwapChain->width(), heliosSwapChain->height());
+  pipelineConfig.renderPass = heliosSwapChain->getRenderPass();
   pipelineConfig.pipelineLayout = pipelineLayout;
   heliosPipeline = std::make_unique<HeliosPipeline>(
       heliosDevice, "shaders/simple_shader.vert.spv",
       "shaders/simple_shader.frag.spv", pipelineConfig);
 }
 
+void FirstApp::recreateSwapChain() {
+  auto extent = heliosWindow.getExtent();
+  while (extent.width == 0 || extent.height == 0) {
+    extent = heliosWindow.getExtent();
+    glfwWaitEvents();
+  }
+
+  vkDeviceWaitIdle(heliosDevice.device());
+
+  if (heliosSwapChain != nullptr) {
+    heliosSwapChain->destroySwapChain();
+  }
+  heliosSwapChain = std::make_unique<HeliosSwapChain>(heliosDevice, extent);
+  createPipeline();
+}
+
 void FirstApp::createCommandBuffers() {
-  commandBuffers.resize(heliosSwapChain.imageCount());
+  commandBuffers.resize(heliosSwapChain->imageCount());
 
   VkCommandBufferAllocateInfo allocInfo{};
 
@@ -77,53 +96,68 @@ void FirstApp::createCommandBuffers() {
                                commandBuffers.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers");
   }
+}
 
-  for (int i = 0; i < commandBuffers.size(); i++) {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+void FirstApp::recordCommandBuffer(int imageIndex) {
 
-    if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-      std::runtime_error("failed to begin recording command buffer");
-    }
+  VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = heliosSwapChain.getRenderPass();
-    renderPassInfo.framebuffer = heliosSwapChain.getFrameBuffer(i);
+  if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) !=
+      VK_SUCCESS) {
+    std::runtime_error("failed to begin recording command buffer");
+  }
 
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = heliosSwapChain.getSwapChainExtent();
+  VkRenderPassBeginInfo renderPassInfo{};
+  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  renderPassInfo.renderPass = heliosSwapChain->getRenderPass();
+  renderPassInfo.framebuffer = heliosSwapChain->getFrameBuffer(imageIndex);
 
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
-    clearValues[1].depthStencil = {1, 0};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-    vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo,
-                         VK_SUBPASS_CONTENTS_INLINE);
+  renderPassInfo.renderArea.offset = {0, 0};
+  renderPassInfo.renderArea.extent = heliosSwapChain->getSwapChainExtent();
 
-    heliosPipeline->bind(commandBuffers[i]);
-    heliosModel->bind(commandBuffers[i]);
-    heliosModel->draw(commandBuffers[i]);
+  std::array<VkClearValue, 2> clearValues{};
+  clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
+  clearValues[1].depthStencil = {1, 0};
+  renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+  renderPassInfo.pClearValues = clearValues.data();
+  vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo,
+                       VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdEndRenderPass(commandBuffers[i]);
+  heliosPipeline->bind(commandBuffers[imageIndex]);
+  heliosModel->bind(commandBuffers[imageIndex]);
+  heliosModel->draw(commandBuffers[imageIndex]);
 
-    if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-      std::runtime_error("failed to record command buffer");
-    }
+  vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+  if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+    std::runtime_error("failed to record command buffer");
   }
 }
 
 void FirstApp::drawFrame() {
   uint32_t imageIndex;
-  auto result = heliosSwapChain.acquireNextImage(&imageIndex);
+  auto result = heliosSwapChain->acquireNextImage(&imageIndex);
+
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    recreateSwapChain();
+    return;
+  }
 
   if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     std::runtime_error("failed to acquire next swap chain image");
   }
 
-  result = heliosSwapChain.submitCommandBuffers(&commandBuffers[imageIndex],
-                                                &imageIndex);
+  recordCommandBuffer(imageIndex);
+  result = heliosSwapChain->submitCommandBuffers(&commandBuffers[imageIndex],
+                                                 &imageIndex);
+
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+      heliosWindow.wasWindowResized()) {
+    heliosWindow.resetWindowResizedFlag();
+    recreateSwapChain();
+    return;
+  }
 
   if (result != VK_SUCCESS) {
     throw std::runtime_error("failed to present swap chain image");

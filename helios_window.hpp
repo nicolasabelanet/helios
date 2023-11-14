@@ -19,16 +19,22 @@ public:
   VkExtent2D getExtent() {
     return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
   };
+  bool wasWindowResized() { return frameBufferResized; };
+  void resetWindowResizedFlag() { frameBufferResized = false; };
+
   void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
 
 private:
+  static void framebufferResizeCallback(GLFWwindow *window, int width,
+                                        int height);
   void initWindow();
   GLFWwindow *window;
 
-  const int width;
-  const int height;
+  int width;
+  int height;
+  bool frameBufferResized = false;
 
-  std::string window_name;
+  std::string windowName;
 };
 
 } // namespace helios
