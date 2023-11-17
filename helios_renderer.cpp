@@ -1,16 +1,8 @@
 #include "helios_renderer.hpp"
-#include "helios_device.hpp"
-#include "helios_swap_chain.hpp"
-#include "helios_window.hpp"
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_FORCE_ZERO_TO_ONE
-#include <vulkan/vulkan_core.h>
 
 // std
 #include <array>
-#include <iostream>
-#include <memory>
+#include <cassert>
 #include <stdexcept>
 
 namespace helios {
@@ -29,7 +21,6 @@ void HeliosRenderer::recreateSwapChain() {
     extent = heliosWindow.getExtent();
     glfwWaitEvents();
   }
-
   vkDeviceWaitIdle(heliosDevice.device());
 
   if (heliosSwapChain == nullptr) {
@@ -40,7 +31,8 @@ void HeliosRenderer::recreateSwapChain() {
         std::make_unique<HeliosSwapChain>(heliosDevice, extent, oldSwapChain);
 
     if (!oldSwapChain->compareSwapFormats(*heliosSwapChain.get())) {
-      throw std::runtime_error("swap chain image(or depth) format has changed");
+      throw std::runtime_error(
+          "Swap chain image(or depth) format has changed!");
     }
   }
 }
@@ -49,7 +41,6 @@ void HeliosRenderer::createCommandBuffers() {
   commandBuffers.resize(HeliosSwapChain::MAX_FRAMES_IN_FLIGHT);
 
   VkCommandBufferAllocateInfo allocInfo{};
-
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandPool = heliosDevice.getCommandPool();
@@ -57,7 +48,7 @@ void HeliosRenderer::createCommandBuffers() {
 
   if (vkAllocateCommandBuffers(heliosDevice.device(), &allocInfo,
                                commandBuffers.data()) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate command buffers");
+    throw std::runtime_error("failed to allocate command buffers!");
   }
 }
 
@@ -69,18 +60,16 @@ void HeliosRenderer::freeCommandBuffers() {
 }
 
 VkCommandBuffer HeliosRenderer::beginFrame() {
-  assert(!isFrameStarted &&
-         "can't call beginFrame with frame already in progress");
-  ;
-  auto result = heliosSwapChain->acquireNextImage(&currentImageIndex);
+  assert(!isFrameStarted && "Can't call beginFrame while already in progress");
 
+  auto result = heliosSwapChain->acquireNextImage(&currentImageIndex);
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
     recreateSwapChain();
     return nullptr;
   }
 
   if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    std::runtime_error("failed to acquire next swap chain image");
+    throw std::runtime_error("failed to acquire swap chain image!");
   }
 
   isFrameStarted = true;
@@ -90,41 +79,39 @@ VkCommandBuffer HeliosRenderer::beginFrame() {
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
   if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-    std::runtime_error("failed to begin recording command buffer");
+    throw std::runtime_error("failed to begin recording command buffer!");
   }
-
   return commandBuffer;
 }
 
 void HeliosRenderer::endFrame() {
   assert(isFrameStarted &&
-         "can't call endFrame while frame is not in progress");
+         "Can't call endFrame while frame is not in progress");
   auto commandBuffer = getCurrentCommandBuffer();
   if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-    std::runtime_error("failed to record command buffer");
+    throw std::runtime_error("failed to record command buffer!");
   }
 
   auto result =
       heliosSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
-
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
       heliosWindow.wasWindowResized()) {
     heliosWindow.resetWindowResizedFlag();
     recreateSwapChain();
   } else if (result != VK_SUCCESS) {
-    throw std::runtime_error("failed to present swap chain image");
+    throw std::runtime_error("failed to present swap chain image!");
   }
 
   isFrameStarted = false;
   currentFrameIndex =
-      (currentFrameIndex + 1) & HeliosSwapChain::MAX_FRAMES_IN_FLIGHT;
+      (currentFrameIndex + 1) % HeliosSwapChain::MAX_FRAMES_IN_FLIGHT;
 }
 
 void HeliosRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
   assert(isFrameStarted &&
-         "can't call beginSwapChainRenderPass if frame is not in progress");
+         "Can't call beginSwapChainRenderPass if frame is not in progress");
   assert(commandBuffer == getCurrentCommandBuffer() &&
-         "can't begin render pass on a command buffer from a different frame");
+         "Can't begin render pass on command buffer from a different frame");
 
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -137,9 +124,10 @@ void HeliosRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
 
   std::array<VkClearValue, 2> clearValues{};
   clearValues[0].color = {0.01f, 0.01f, 0.01f, 1.0f};
-  clearValues[1].depthStencil = {1, 0};
+  clearValues[1].depthStencil = {1.0f, 0};
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues = clearValues.data();
+
   vkCmdBeginRenderPass(commandBuffer, &renderPassInfo,
                        VK_SUBPASS_CONTENTS_INLINE);
 
@@ -159,10 +147,10 @@ void HeliosRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
 
 void HeliosRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer) {
   assert(isFrameStarted &&
-         "can't call endSwapChainRenderPass if frame is not in progress");
+         "Can't call endSwapChainRenderPass if frame is not in progress");
   assert(commandBuffer == getCurrentCommandBuffer() &&
-         "can't end render pass on a command buffer from a different frame");
-
+         "Can't end render pass on command buffer from a different frame");
   vkCmdEndRenderPass(commandBuffer);
 }
+
 } // namespace helios
