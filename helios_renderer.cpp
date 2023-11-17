@@ -35,17 +35,18 @@ void HeliosRenderer::recreateSwapChain() {
   if (heliosSwapChain == nullptr) {
     heliosSwapChain = std::make_unique<HeliosSwapChain>(heliosDevice, extent);
   } else {
-    heliosSwapChain = std::make_unique<HeliosSwapChain>(
-        heliosDevice, extent, std::move(heliosSwapChain));
-    if (heliosSwapChain->imageCount() != commandBuffers.size()) {
-      freeCommandBuffers();
-      createCommandBuffers();
+    std::shared_ptr<HeliosSwapChain> oldSwapChain = std::move(heliosSwapChain);
+    heliosSwapChain =
+        std::make_unique<HeliosSwapChain>(heliosDevice, extent, oldSwapChain);
+
+    if (!oldSwapChain->compareSwapFormats(*heliosSwapChain.get())) {
+      throw std::runtime_error("swap chain image(or depth) format has changed");
     }
   }
 }
 
 void HeliosRenderer::createCommandBuffers() {
-  commandBuffers.resize(heliosSwapChain->imageCount());
+  commandBuffers.resize(HeliosSwapChain::MAX_FRAMES_IN_FLIGHT);
 
   VkCommandBufferAllocateInfo allocInfo{};
 
@@ -115,6 +116,8 @@ void HeliosRenderer::endFrame() {
   }
 
   isFrameStarted = false;
+  currentFrameIndex =
+      (currentFrameIndex + 1) & HeliosSwapChain::MAX_FRAMES_IN_FLIGHT;
 }
 
 void HeliosRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {

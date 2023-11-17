@@ -6,6 +6,7 @@
 
 // std
 #include <cassert>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -27,7 +28,13 @@ public:
   VkCommandBuffer getCurrentCommandBuffer() const {
     assert(isFrameStarted &&
            "cannot get command buffer when frame not in progress");
-    return commandBuffers[currentImageIndex];
+    return commandBuffers[currentFrameIndex];
+  }
+
+  int getFrameIndex() const {
+    assert(isFrameStarted &&
+           "cannot get frame index when frame not in progress");
+    return currentFrameIndex;
   }
 
   VkCommandBuffer beginFrame();
@@ -46,7 +53,9 @@ private:
   std::vector<VkCommandBuffer> commandBuffers;
 
   uint32_t currentImageIndex;
-  bool isFrameStarted = false;
+  int currentFrameIndex{0};
+
+  bool isFrameStarted{false};
 };
 
 } // namespace helios
