@@ -2,9 +2,11 @@
 #include "vulkan/vulkan_core.h"
 
 // std headers
+#include <codecvt>
 #include <cstring>
 #include <iostream>
 #include <set>
+#include <string>
 #include <unordered_set>
 
 namespace helios {
@@ -327,6 +329,10 @@ bool HeliosDevice::checkDeviceExtensionSupport(VkPhysicalDevice device) {
                                            deviceExtensions.end());
 
   for (const auto &extension : availableExtensions) {
+    if (strcmp(extension.extensionName, "VK_KHR_portability_subset")) {
+      std::cout << "enabling VK_KHR_portability_subset" << '\n';
+      deviceExtensions.push_back("VK_KHR_portability_subset");
+    }
     requiredExtensions.erase(extension.extensionName);
   }
 

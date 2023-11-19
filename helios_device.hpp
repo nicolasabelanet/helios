@@ -1,12 +1,10 @@
 #pragma once
 
 #include "helios_window.hpp"
-#include "vulkan/vulkan_core.h"
 
 // std lib headers
 #include <string>
 #include <vector>
-#include <vulkan/vulkan.h>
 
 namespace helios {
 
@@ -38,6 +36,8 @@ public:
   // Not copyable or movable
   HeliosDevice(const HeliosDevice &) = delete;
   HeliosDevice &operator=(const HeliosDevice &) = delete;
+  HeliosDevice(HeliosDevice &&) = delete;
+  HeliosDevice &operator=(HeliosDevice &&) = delete;
 
   VkCommandPool getCommandPool() { return commandPool; }
   VkDevice device() { return device_; }
@@ -105,8 +105,8 @@ private:
 
   const std::vector<const char *> validationLayers = {
       "VK_LAYER_KHRONOS_validation"};
-  const std::vector<const char *> deviceExtensions = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset"};
+  std::vector<const char *> deviceExtensions = {
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };
 
 } // namespace helios

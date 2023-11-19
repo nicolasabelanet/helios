@@ -1,12 +1,13 @@
 #include "helios_pipeline.hpp"
+
 #include "helios_model.hpp"
-#include "vulkan/vulkan_core.h"
 
 // std
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+
 
 namespace helios {
 
@@ -25,7 +26,6 @@ HeliosPipeline::~HeliosPipeline() {
 }
 
 std::vector<char> HeliosPipeline::readFile(const std::string &filepath) {
-
   std::ifstream file{filepath, std::ios::ate | std::ios::binary};
 
   if (!file.is_open()) {
@@ -45,11 +45,9 @@ std::vector<char> HeliosPipeline::readFile(const std::string &filepath) {
 void HeliosPipeline::createGraphicsPipeline(
     const std::string &vertFilepath, const std::string &fragFilepath,
     const PipelineConfigInfo &configInfo) {
-
   assert(configInfo.pipelineLayout != VK_NULL_HANDLE &&
          "Cannot create graphics pipeline:: no pipelineLayout provided in "
          "configInfo");
-
   assert(configInfo.renderPass != VK_NULL_HANDLE &&
          "Cannot create graphics pipeline:: no renderPass provided in "
          "configInfo");
@@ -68,7 +66,6 @@ void HeliosPipeline::createGraphicsPipeline(
   shaderStages[0].flags = 0;
   shaderStages[0].pNext = nullptr;
   shaderStages[0].pSpecializationInfo = nullptr;
-
   shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
   shaderStages[1].module = fragShaderModule;
@@ -77,9 +74,8 @@ void HeliosPipeline::createGraphicsPipeline(
   shaderStages[1].pNext = nullptr;
   shaderStages[1].pSpecializationInfo = nullptr;
 
-  auto bindingDescriptions = HeliosModel::Vertex::getBindingDescriptions();
-  auto attributeDescriptions = HeliosModel::Vertex::getAttributeDescriptions();
-
+  auto &bindingDescriptions = configInfo.bindingDescriptions;
+  auto &attributeDescriptions = configInfo.attributeDescriptions;
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
   vertexInputInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -95,10 +91,10 @@ void HeliosPipeline::createGraphicsPipeline(
   pipelineInfo.stageCount = 2;
   pipelineInfo.pStages = shaderStages;
   pipelineInfo.pVertexInputState = &vertexInputInfo;
-  pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
   pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
   pipelineInfo.pViewportState = &configInfo.viewportInfo;
   pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
+  pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
   pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
   pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
   pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
@@ -123,6 +119,7 @@ void HeliosPipeline::createShaderModule(const std::vector<char> &code,
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
+
   if (vkCreateShaderModule(heliosDevice.device(), &createInfo, nullptr,
                            shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("failed to create shader module");
@@ -135,7 +132,6 @@ void HeliosPipeline::bind(VkCommandBuffer commandBuffer) {
 }
 
 void HeliosPipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
-
   configInfo.inputAssemblyInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -217,6 +213,11 @@ void HeliosPipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo) {
   configInfo.dynamicStateInfo.dynamicStateCount =
       static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
   configInfo.dynamicStateInfo.flags = 0;
+
+  configInfo.bindingDescriptions =
+      HeliosModel::Vertex::getBindingDescriptions();
+  configInfo.attributeDescriptions =
+      HeliosModel::Vertex::getAttributeDescriptions();
 }
 
 } // namespace helios
