@@ -304,8 +304,7 @@ void HeliosDevice::hasGflwRequiredInstanceExtensions() {
   for (const auto &extension : extensions) {
     std::cout << "\t" << extension.extensionName << std::endl;
     available.insert(extension.extensionName);
-    if (strcmp(extension.extensionName, "VK_KHR_portability_subset")) {
-      std::cout << extension.extensionName << " " << std::endl;
+    if (strcmp(extension.extensionName, "VK_KHR_portability_subset") == 0) {
       deviceExtensions.push_back("VK_KHR_portability_subset");
     }
   }
