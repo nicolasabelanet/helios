@@ -23,6 +23,7 @@ public:
   VkRenderPass getSwapChainRenderPass() const {
     return heliosSwapChain->getRenderPass();
   }
+  float getAspectRatio() const { return heliosSwapChain->extentAspectRatio(); }
   bool isFrameInProgress() const { return isFrameStarted; }
 
   VkCommandBuffer getCurrentCommandBuffer() const {

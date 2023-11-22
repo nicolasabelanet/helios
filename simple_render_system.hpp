@@ -1,4 +1,5 @@
 #pragma once
+#include "helios_camera.hpp"
 #include "helios_device.hpp"
 #include "helios_game_object.hpp"
 #include "helios_pipeline.hpp"
@@ -18,7 +19,8 @@ public:
   SimpleRenderSystem(const SimpleRenderSystem &) = delete;
   SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
   void renderGameObjects(VkCommandBuffer commandBuffer,
-                         std::vector<HeliosGameObject> &gameObjects);
+                         std::vector<HeliosGameObject> &gameObjects,
+                         const HeliosCamera &camera);
 
 private:
   void createPipelineLayout();
