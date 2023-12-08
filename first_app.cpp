@@ -70,10 +70,10 @@ void FirstApp::run() {
 
 void FirstApp::loadGameObjects() {
   std::shared_ptr<HeliosModel> heliosModel =
-      HeliosModel::createModelFromFile(heliosDevice, "models/smooth_vase.obj");
+      HeliosModel::createModelFromFile(heliosDevice, "models/flat_vase.obj");
   auto gameObject = HeliosGameObject::createGameObject();
   gameObject.model = heliosModel;
-  gameObject.transform.translation = {0.0f, 0.0f, 2.5f};
+  gameObject.transform.translation = {0.0f, 0.5f, 2.5f};
   gameObject.transform.scale = glm::vec3(3.0f);
   gameObjects.push_back(std::move(gameObject));
 }
